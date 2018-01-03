@@ -11,20 +11,20 @@ void turnOnRelay();
 void turnOffRelay();
 void sendRelayState();
 
-const char* ssid = "20scoops Team";  // CHANGE: Wifi name
-const char* password = "oyom-;hk'";  // CHANGE: Wifi password 
-String friendlyName = "light";        // CHANGE: Alexa device name
-const int relayPin = D3;  // D1 pin. More info: https://github.com/esp8266/Arduino/blob/master/variants/d1_mini/pins_arduino.h#L49-L61
+const char* ssid = "name_ssid";
+const char* password = "password_ssid";
+String friendlyName = "name_device";
+const int relayPin = D3;
 
 WiFiUDP UDP;
 IPAddress ipMulti(239, 255, 255, 250);
 ESP8266WebServer HTTP(80);
 boolean udpConnected = false;
-unsigned int portMulti = 1900;      // local port to listen on
-unsigned int localPort = 1900;      // local port to listen on
+unsigned int portMulti = 1900;
+unsigned int localPort = 1900;
 boolean wifiConnected = false;
 boolean relayState = false;
-char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet,
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 String serial;
 String persistent_uuid;
 boolean cannotConnectToWifi = false;
@@ -32,22 +32,18 @@ boolean cannotConnectToWifi = false;
 void setup() {
   Serial.begin(115200);
 
-  // Setup Relay
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, HIGH);
   
   prepareIds();
   
-  // Initialise wifi connection
   wifiConnected = connectWifi();
 
-  // only proceed if wifi connection successful
   if(wifiConnected){
     Serial.println("Ask Alexa to discover devices");
     udpConnected = connectUDP();
     
     if (udpConnected){
-      // initialise pins if needed 
       startHttpServer();
     }
   }  
@@ -58,19 +54,11 @@ void loop() {
   HTTP.handleClient();
   delay(1);
   
-  
-  // if there's data available, read a packet
-  // check if the WiFi and UDP connections were successful
   if(wifiConnected){
     if(udpConnected){    
-      // if there’s data available, read a packet
       int packetSize = UDP.parsePacket();
       
       if(packetSize) {
-        //Serial.println("");
-        //Serial.print("Received packet of size ");
-        //Serial.println(packetSize);
-        //Serial.print("From ");
         IPAddress remote = UDP.remoteIP();
         
         for (int i =0; i < 4; i++) {
@@ -90,13 +78,8 @@ void loop() {
         }
 
         String request = packetBuffer;
-        //Serial.println("Request:");
-        //Serial.println(request);
         
-        // Issue https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch/issues/24 fix
         if(request.indexOf("M-SEARCH") >= 0) {
-            // Issue https://github.com/kakopappa/arduino-esp8266-alexa-multiple-wemo-switch/issues/22 fix
-            //if(request.indexOf("urn:Belkin:device:**") > 0) {
              if((request.indexOf("urn:Belkin:device:**") > 0) || (request.indexOf("ssdp:all") > 0) || (request.indexOf("upnp:rootdevice") > 0)) {
                 Serial.println("Responding to search request ...");
                 respondToSearch();
@@ -162,10 +145,6 @@ void startHttpServer() {
 
     HTTP.on("/upnp/control/basicevent1", HTTP_POST, []() {
       Serial.println("########## Responding to  /upnp/control/basicevent1 ... ##########");      
-
-      //for (int x=0; x <= HTTP.args(); x++) {
-      //  Serial.println(HTTP.arg(x));
-      //}
   
       String request = HTTP.arg(0);      
       Serial.print("request:");
@@ -275,7 +254,6 @@ void startHttpServer() {
         Serial.println(setup_xml);
     });
 
-    // openHAB support
     HTTP.on("/on.html", HTTP_GET, [](){
          Serial.println("Got Turn on request");
          HTTP.send(200, "text/plain", "turned on");
@@ -303,7 +281,6 @@ void startHttpServer() {
     Serial.println("HTTP Server started ..");
 }
       
-// connect to wifi – returns true if successful or false if not
 boolean connectWifi(){
   boolean state = true;
   int i = 0;
@@ -313,7 +290,6 @@ boolean connectWifi(){
   Serial.println("");
   Serial.println("Connecting to WiFi");
 
-  // Wait for connection
   Serial.print("Connecting ...");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -358,7 +334,7 @@ boolean connectUDP(){
 }
 
 void turnOnRelay() {
- digitalWrite(relayPin, LOW); // turn on relay with voltage HIGH 
+ digitalWrite(relayPin, LOW);
  relayState = true;
 
   String body = 
@@ -375,7 +351,7 @@ void turnOnRelay() {
 }
 
 void turnOffRelay() {
-  digitalWrite(relayPin, HIGH);  // turn off relay with voltage LOW
+  digitalWrite(relayPin, HIGH);
   relayState = false;
 
   String body = 
